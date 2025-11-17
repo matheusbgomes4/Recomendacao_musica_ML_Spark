@@ -1,59 +1,103 @@
-# 🎧 Sistema de Recomendação de Músicas com PySpark
+🎧 Sistema de Recomendação de Músicas com PySpark
 
-[![Abrir no Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/matheusbgomes4/Recomendador_Musical_PySpark/blob/main/Recomendacao_musica.ipynb)
+Filtragem Colaborativa com ALS (Alternating Least Squares)
 
-Este projeto apresenta a construção de um sistema de recomendação musical utilizando **filtragem colaborativa com o algoritmo ALS (Alternating Least Squares)** do PySpark.  
-A proposta é prever quais músicas um usuário provavelmente vai gostar, com base em suas avaliações anteriores — um conceito aplicado em plataformas como Spotify e Deezer.
+Este projeto implementa um sistema de recomendação musical usando PySpark e o algoritmo ALS, técnica amplamente utilizada em plataformas como Spotify e Deezer para prever quais músicas um usuário provavelmente vai gostar.
 
----
+🎯 Objetivo
 
-## 🎯 Objetivo
+Criar um sistema de recomendação escalável baseado em filtragem colaborativa, capaz de prever notas de músicas e gerar recomendações personalizadas para cada usuário.
 
-O objetivo deste projeto é desenvolver uma solução prática e escalável de recomendação de músicas, capaz de personalizar sugestões de acordo com os gostos dos usuários.  
-O modelo identifica padrões de comportamento entre usuários com preferências semelhantes e utiliza esses padrões para prever futuras interações.
+📁 Dataset
+Coluna	Tipo	Descrição
+userId	int	Identificador único do usuário
+trackId	int	Identificador único da música
+rating	float	Nota atribuída (0–5)
+⚙️ Tecnologias Utilizadas
 
----
+Python 3
 
-## 📁 Estrutura dos Dados
+PySpark (MLlib)
 
-| Coluna    | Tipo    | Descrição                               |
-|-----------|---------|------------------------------------------|
-| `userId`  | int     | Identificador único do usuário           |
-| `trackId` | int     | Identificador único da música            |
-| `rating`  | float   | Nota dada pelo usuário à música (0 a 5)  |
+ALS (Alternating Least Squares)
 
----
+RMSE (Root Mean Squared Error)
 
-## ⚙️ Tecnologias Utilizadas
+Google Colab
 
-- Python 3  
-- PySpark (MLlib)  
-- ALS (Alternating Least Squares)  
-- Google Colab  
-- RMSE (Root Mean Squared Error)
+🛠️ Etapas do Projeto
+1. Carregamento e Preparação dos Dados
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 
----
+spark = SparkSession.builder.appName("RecomendacaoMusica").getOrCreate()
 
-## 🛠️ Etapas do Projeto
+df = spark.read.csv("/content/musicas.csv", header=True, inferSchema=True)
 
-1. **Preparação dos dados**
-   - Leitura e limpeza
-   - Conversão de tipos
-2. **Criação do modelo**
-   - Treinamento com ALS
-   - Configuração de hiperparâmetros
-   - Divisão em treino e teste
-3. **Avaliação**
-   - Cálculo do RMSE no conjunto de teste
-4. **Geração de recomendações**
-   - Top-N sugestões de músicas para cada usuário
+df = df.select(
+    col("userId").cast("int"),
+    col("trackId").cast("int"),
+    col("rating").cast("float")
+)
 
----
+2. Divisão entre Treino e Teste
+treino, teste = df.randomSplit([0.8, 0.2], seed=42)
 
-## 📊 Resultado
+3. Criação e Treinamento do Modelo (ALS)
+from pyspark.ml.recommendation import ALS
 
-| Métrica | Valor obtido |
-|---------|--------------|
-| RMSE    | 1.21         |
+als = ALS(
+    maxIter=10,
+    regParam=0.1,
+    rank=10,
+    userCol="userId",
+    itemCol="trackId",
+    ratingCol="rating",
+    coldStartStrategy="drop"
+)
 
----
+modelo = als.fit(treino)
+
+4. Avaliação do Modelo (RMSE)
+from pyspark.ml.evaluation import RegressionEvaluator
+
+predicoes = modelo.transform(teste)
+
+evaluator = RegressionEvaluator(
+    metricName="rmse",
+    labelCol="rating",
+    predictionCol="prediction"
+)
+
+rmse = evaluator.evaluate(predicoes)
+print(f"RMSE: {rmse:.2f}")
+
+📊 Resultado:
+Métrica	Valor
+RMSE	1.21
+5. Geração de Recomendações
+🔝 Recomendando Top-5 músicas por usuário:
+recomendacoes = modelo.recommendForAllUsers(5)
+recomendacoes.show(truncate=False)
+
+📌 Exemplo de Saída (Formatação ilustrativa)
+userId	Recomendações
+12	[(trackId=44, rating=4.91), (trackId=7, rating=4.73)...]
+33	[(trackId=18, rating=4.82), (trackId=62, rating=4.59)...]
+📊 Possíveis Melhorias Futuras
+
+Tunagem com CrossValidator
+
+Métricas de ranking (MAP, NDCG, Precision@k)
+
+Combinação de modelos (híbrido colaborativo + conteúdo)
+
+Deploy via API com FastAPI + Spark
+
+🧠 Principais Aprendizados
+
+ALS captura padrões profundos entre usuários com preferências semelhantes.
+
+O modelo escalou sem perda significativa de desempenho.
+
+RMSE sólido para um modelo colaborativo sem features adicionais.
