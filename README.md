@@ -8,11 +8,12 @@ Este projeto implementa um sistema de recomendação musical usando PySpark e o 
 
 Criar um sistema de recomendação escalável baseado em filtragem colaborativa, capaz de prever notas de músicas e gerar recomendações personalizadas para cada usuário.
 ---
-# 📁 Dataset
-Coluna	Tipo	Descrição
-userId	int	Identificador único do usuário
-trackId	int	Identificador único da música
-rating	float	Nota atribuída (0–5)
+| Coluna    | Tipo  | Descrição     |
+| --------- | ----- | ------------- |
+| `userId`  | int   | ID do usuário |
+| `trackId` | int   | ID da música  |
+| `rating`  | float | Nota (0 a 5)  |
+
 ---
 # ⚙️ Tecnologias Utilizadas
 
@@ -41,6 +42,7 @@ df = df.select(
     col("rating").cast("float")
 )
 
+
 ## 2. Divisão entre Treino e Teste
 treino, teste = df.randomSplit([0.8, 0.2], seed=42)
 
@@ -59,6 +61,9 @@ als = ALS(
 
 modelo = als.fit(treino)
 
+
+modelo = als.fit(treino)
+
 ## 4. Avaliação do Modelo (RMSE)
 from pyspark.ml.evaluation import RegressionEvaluator
 
@@ -74,17 +79,23 @@ rmse = evaluator.evaluate(predicoes)
 print(f"RMSE: {rmse:.2f}")
 ---
 # 📊 Resultado:
-Métrica	Valor
-RMSE	1.21
+| Métrica  | Valor    |
+| -------- | -------- |
+| **RMSE** | **1.21** |
+
 ## 5. Geração de Recomendações
 🔝 Recomendando Top-5 músicas por usuário:
 recomendacoes = modelo.recommendForAllUsers(5)
 recomendacoes.show(truncate=False)
 ---
 #📌 Exemplo de Saída (Formatação ilustrativa)
-userId	Recomendações
-12	[(trackId=44, rating=4.91), (trackId=7, rating=4.73)...]
-33	[(trackId=18, rating=4.82), (trackId=62, rating=4.59)...]
++------+-------------------------------------------------------------+
+|userId|recommendations                                              |
++------+-------------------------------------------------------------+
+|12    |[[44,4.91], [7,4.73], [33,4.70], [18,4.82], [62,4.59]]       |
+|33    |[[18,4.82], [62,4.59], [90,4.51], [7,4.40], [55,4.32]]       |
++------+-------------------------------------------------------------+
+
 ---
 # 📊 Possíveis Melhorias Futuras
 
